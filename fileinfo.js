@@ -8,8 +8,7 @@
 	-------------------------------------------------------
 */
 
-module.exports = (function() {
-
+var FileInfo = (function() {
 	var byExtension = (function() {
 		var res = {
 			/* text */
@@ -214,3 +213,7 @@ module.exports = (function() {
 		}
 	};
 })();
+
+if (typeof module !== 'undefined' && module.exports) {
+	module.exports = FileInfo;
+}
