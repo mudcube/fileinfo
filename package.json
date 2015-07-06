@@ -1,0 +1,8 @@
+{
+  "name": "fileinfo",
+  "version": "1.0.0",
+  "description": "Detect file format and other meta data from URL, Blob, Buffer, or String.",
+  "main": "index.js",
+  "author": "Michael Deal <hello@sketch.io> (https://mudcu.be)",
+  "license": "MIT"
+}
