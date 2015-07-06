@@ -2,7 +2,15 @@
   "name": "fileinfo",
   "version": "1.0.0",
   "description": "Detect file format and other meta data from URL, Blob, Buffer, or String.",
-  "main": "index.js",
+  "main": "fileinfo.js",
   "author": "Michael Deal <hello@sketch.io> (https://mudcu.be)",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mudcube/fileinfo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mudcube/fileinfo/issues"
+  },
+  "homepage": "https://github.com/mudcube/fileinfo#readme"
 }
