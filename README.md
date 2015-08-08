@@ -7,6 +7,7 @@ FileInfo.byMime(someMimeType); // returns file info from mimetype [ex. "image/gi
 FileInfo.isBlob(someVariable); // true if is Blob | File
 FileInfo.isSVGString(someVariable); // true if is SVG String | SVG Base64
 ```
+--------------------------------------------------------------------------------------------------------------
 
 The MIT License
 
