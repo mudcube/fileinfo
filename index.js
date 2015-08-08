@@ -1,14 +1,16 @@
 /*
-	-------------------------------------------------------
-	fileinfo : 0.1.1 : 2015-07-06 : https://mudcu.be
-	-------------------------------------------------------
+	----------------------------------------------------------
+	FileInfo : 0.1.1 : 2015-08-06 : https://mudcu.be
+	----------------------------------------------------------
 	references
-		* http://en.wikipedia.org/wiki/List_of_file_bySignature
-		* http://www.filebySignature.net/
-	-------------------------------------------------------
+	----------------------------------------------------------
+		http://en.wikipedia.org/wiki/List_of_file_bySignature
+		http://www.filebySignature.net/
+	----------------------------------------------------------
 */
 
 var FileInfo = (function() {
+
 	var byExtension = (function() {
 		var res = {
 			/* text */
@@ -125,10 +127,6 @@ var FileInfo = (function() {
 	};
 	
 	function FileInfo(data, onsuccess, onerror) {
-		if (typeof onsuccess !== 'function') {
-			throw 'onsuccess must be a function';
-		}
-		///
 		if (typeof data === 'string') {
 			var res = detectFromString(data);
 			if (res) {
@@ -139,35 +137,24 @@ var FileInfo = (function() {
 			}
 		} else {
 			if (isBlob(data)) {
-				if (data.size >= 4) {
-					var blob = data.slice(0, 4);
-					var reader = new FileReader();
-					reader.onload = function(event) {
-						handleArrayBuffer(reader.result);
-					};
-					reader.readAsArrayBuffer(blob);
-					return;
-				}
-			} else if (isBuffer(data)) {
-				if (data.length >= 4) {
-					handleArrayBuffer(data.slice(0, 4));
-					return;
-				}
-			}
-			///
-			onerror && onerror();
-			warn(data);
-		}
-		///
-		function handleArrayBuffer(buf) {
-			var res = detectFromBuffer(buf) || byMime[data.type];
-			if (res) {
-				onsuccess(res);
+				var slice = data.slice(0, 4);
+				var reader = new FileReader();
+				reader.onload = function(event) {
+					var buffer = reader.result;
+					var res = detectFromBuffer(buffer) || byMime[data.type];
+					if (res) {
+						onsuccess(res);
+					} else {
+						onerror && onerror();
+						warn(data);
+					}
+				};
+				reader.readAsArrayBuffer(slice);
 			} else {
 				onerror && onerror();
 				warn(data);
 			}
-		};
+		}
 	};
 	
 	FileInfo.byExtension = byExtension;
@@ -185,11 +172,9 @@ var FileInfo = (function() {
 	/* detect */
 	function isBlob(data) {
 		var type = Object.prototype.toString.call(data);
-		return type === '[object Blob]' || type === '[object File]';
-	};
-
-	function isBuffer(data) {
-		return typeof Buffer !== 'undefined' && data instanceof Buffer;
+		var validType = type === '[object Blob]' || type === '[object File]';
+		var validSize = data.size > 3; // to ensure slice(0, 4) can work
+		return validType && validSize;
 	};
 
 	function isSVGString(data) { // via vector.SVG.detect
@@ -220,17 +205,19 @@ var FileInfo = (function() {
 
 	/* detect via String */
 	function detectFromString(string) {
-		var ext = string.toLowerCase().split('.').pop();
-		if (byExtension[ext]) {
-			return byExtension[ext];
+		var lower = string.toLowerCase();
+		if (string.startsWith('data:')) {
+			var mime = lower.substr(5).split(';').shift();
+			return byMime[mime];
 		} else {
-			if (isSVGString(string)) {
-				return byExtension.svg;
+			var ext = lower.split('.').pop();
+			if (byExtension[ext]) {
+				return byExtension[ext];
+			} else {
+				if (isSVGString(string)) {
+					return byExtension.svg;
+				}
 			}
 		}
 	};
 })();
-
-if (typeof module !== 'undefined' && module.exports) {
-	module.exports = FileInfo;
-}
