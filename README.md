@@ -9,4 +9,5 @@ FileInfo.isSVGString(someVariable); // true if is SVG String | SVG Base64
 ```
 
 The MIT License
+
 Copyright (c) 2015 Michael Deal <https://mudcu.be>. All rights reserved.
