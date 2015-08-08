@@ -1,4 +1,4 @@
-## File Info
+# File Info
 
 Quick and easy file info detection in Javascript:
 
