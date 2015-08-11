@@ -3,7 +3,10 @@
 Quick and easy file info detection in Javascript:
 
 ```js
-FileInfo(someVariable); // returns file info from: String | Blob | Buffer
+/// The main function:
+FileInfo(someVariable); // returns file info from: URL | Base64 | Blob | Buffer
+
+/// Exposed internals that are helpful:
 FileInfo.byExtension(someExtension); // returns file info from extension [ex. "gif" | "webm"]
 FileInfo.byMime(someMimeType); // returns file info from mimetype [ex. "image/gif" | "video/webm"]
 FileInfo.isBlob(someVariable); // true if is Blob | File
