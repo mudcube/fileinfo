@@ -179,7 +179,7 @@ var FileInfo = (function() {
 
 	function isSVGString(data) { // via vector.SVG.detect
 		return data.startsWith('data:image/svg') || 
-			   data.startsWith('<?xml') || 
+			   data.startsWith('<?xml') && data.includes('<svg') || 
 			   data.startsWith('<svg');
 	};
 
