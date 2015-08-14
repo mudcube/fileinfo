@@ -156,12 +156,16 @@ var FileInfo = (function() {
 			}
 		}
 	};
-	
+	///
+	FileInfo.fromString = detectFromString;
+	FileInfo.fromBuffer = detectFromBuffer;
+	///
 	FileInfo.byExtension = byExtension;
 	FileInfo.byMime = byMime;
+	///
 	FileInfo.isBlob = isBlob;
 	FileInfo.isSVGString = isSVGString;
-	
+	///
 	return FileInfo;
 	
 	/* log */
