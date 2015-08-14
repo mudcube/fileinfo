@@ -9,8 +9,8 @@ FileInfo(someVariable); // returns file info from: URL | Base64 | Blob | Buffer
 /// Exposed internals that are helpful:
 var info = FileInfo.fromBuffer(arrayBuffer);
 var info = FileInfo.fromString(string);
-var info = FileInfo.byExtension(someExtension); // returns file info from extension [ex. "gif" | "webm"]
-var info = FileInfo.byMime(someMimeType); // returns file info from mimetype [ex. "image/gif" | "video/webm"]
+var info = FileInfo.fromExtension(someExtension); // returns file info from extension [ex. "gif" | "webm"]
+var info = FileInfo.fromMime(someMimeType); // returns file info from mimetype [ex. "image/gif" | "video/webm"]
 ///
 var truthy = FileInfo.isBlob(someVariable); // true if is Blob | File
 var truthy = FileInfo.isSVGString(someVariable); // true if is SVG String | SVG Base64
