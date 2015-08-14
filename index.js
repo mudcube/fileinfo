@@ -9,7 +9,7 @@
 	----------------------------------------------------------
 */
 
-var FileInfo = (function() {
+var FileInfo = util.FileInfo = (function() {
 
 	var byExtension = (function() {
 		var res = {
@@ -128,7 +128,7 @@ var FileInfo = (function() {
 	
 	function FileInfo(data, onsuccess, onerror) {
 		if (typeof data === 'string') {
-			var res = detectFromString(data);
+			var res = fromString(data);
 			if (res) {
 				onsuccess(res);
 			} else {
@@ -141,7 +141,7 @@ var FileInfo = (function() {
 				var reader = new FileReader();
 				reader.onload = function(event) {
 					var buffer = reader.result;
-					var res = detectFromBuffer(buffer) || byMime[data.type];
+					var res = fromBuffer(buffer) || byMime[data.type];
 					if (res) {
 						onsuccess(res);
 					} else {
@@ -157,11 +157,10 @@ var FileInfo = (function() {
 		}
 	};
 	///
-	FileInfo.fromString = detectFromString;
-	FileInfo.fromBuffer = detectFromBuffer;
-	///
-	FileInfo.byExtension = byExtension;
-	FileInfo.byMime = byMime;
+	FileInfo.fromBuffer = fromBuffer;
+	FileInfo.fromString = fromString;
+	FileInfo.fromExtension = fromExtension;
+	FileInfo.fromMime = fromMime;
 	///
 	FileInfo.isBlob = isBlob;
 	FileInfo.isSVGString = isSVGString;
@@ -188,7 +187,7 @@ var FileInfo = (function() {
 	};
 
 	/* detect via ArrayBuffer */
-	function detectFromBuffer(buffer) {
+	function fromBuffer(buffer) {
 		var signature = bufferToHex(buffer);
 		for (var sig in bySignature) {
 			if (sig === signature.slice(0, sig.length)) {
@@ -208,7 +207,7 @@ var FileInfo = (function() {
 	};
 
 	/* detect via String */
-	function detectFromString(string) {
+	function fromString(string) {
 		var lower = string.toLowerCase();
 		if (string.startsWith('data:')) {
 			var mime = lower.substr(5).split(';').shift();
@@ -223,5 +222,13 @@ var FileInfo = (function() {
 				}
 			}
 		}
+	};
+	
+	function fromExtension(ext) {
+		return byExtension[ext];
+	};
+	
+	function fromMime(mime) {
+		return byMime[mime];
 	};
 })();
