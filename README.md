@@ -11,8 +11,6 @@ FileInfo(someVariable, function(info) { // accepts: URL | Base64 | Blob | Buffer
 });
 
 /// Exposed internals:
-FileInfo.fromBlob(blob, onsuccess, onerror);
-///
 var info = FileInfo.fromBuffer(arrayBuffer);
 var info = FileInfo.fromString(string);
 var info = FileInfo.fromExtension(someExtension); // accepts file extension [ex. "gif" | "webm"]
