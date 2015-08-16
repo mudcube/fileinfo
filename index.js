@@ -9,7 +9,7 @@
 	----------------------------------------------------------
 */
 
-var FileInfo = util.FileInfo = (function() {
+var FileInfo = (function() {
 
 	var byExtension = (function() {
 		var res = {
@@ -62,7 +62,7 @@ var FileInfo = util.FileInfo = (function() {
 		}
 		return res;
 	})();
-	
+
 	var byMime = (function() {
 		var res = {};
 		for (var ext in byExtension) {
@@ -74,13 +74,13 @@ var FileInfo = util.FileInfo = (function() {
 
 	var bySignature = {
 		/* image */
-		'424d':     'bmp',
+		'424d'    : 'bmp',
 		'47494638': 'gif', 
 			// 47 49 46 38 37 61 (GIF87a)
 			// 47 49 46 38 39 61 (GIF89a)
 		'69636e73': 'icns', // http://en.wikipedia.org/wiki/Apple_Icon_Image_format
 		'00000100': 'ico',
-		'ffd8ff':   'jpg',
+		'ffd8ff'  : 'jpg',
 		'89504e47': 'png',
 			// 89 50 4E 47 0D 0A 1A 0A
 		'4d4d002a': 'tiff', // big endian format
@@ -90,9 +90,9 @@ var FileInfo = util.FileInfo = (function() {
 		/* audio */
 		'464f524d': 'aiff',
 			// 46 4F 52 4D nn nn nn nn 41 49 46 46
-		'4d546864': 'mid',
-		'fffb':     'mp3',
-		'494433':   'mp3',
+		'4d546864': 'mid', // 'MThd'
+		'fffb'    : 'mp3',
+		'494433'  : 'mp3',
 		'4f676753': 'ogg',
 		'52494646': 'wav',
 			// 52 49 46 46 nn nn nn nn 57 41 56 45	
@@ -103,7 +103,7 @@ var FileInfo = util.FileInfo = (function() {
 		'1a45dfa3': 'webm',
 
 		/* font */
-		'4c50':     'eot',
+		'4c50'    : 'eot',
 		'00010000': 'ttf', // windows
 			// 00 01 00 00 00
 		'74727565': 'ttf', // mac
@@ -116,16 +116,19 @@ var FileInfo = util.FileInfo = (function() {
 			// 77 4F 46 32 00 01 00 00
 
 		/* package */
-		'25504446': 'pdf',
-		'25215053': 'ps',
-		'38425053': 'psd',
-		'7b5c7274': 'rtf',
-			// 7b 5c 72 74 66
-		'504b0304': 'zip', // archive
-		'504b0506': 'zip', // empty archive
-		'504b0708': 'zip'  // spanned archive
+		'25504446': 'pdf', // '%PDF'
+		'25215053': 'ps',  // '%!PS-Ado'
+		'38425053': 'psd', // '8BPS'
+		'7b5c7274': 'rtf', // '{\rtf1'
+			// 7b 5c 72 74 66 31
+		'504b0304': 'zip', // 'PK..' - archive
+		'504b0506': 'zip', // 'PK..' - empty archive
+		'504b0708': 'zip', // 'PK..' - spanned archive
+
+		/* loose detection - keep at end of object */
+		'7b'      : 'json' // '{'
 	};
-	
+
 	function FileInfo(data, onsuccess, onerror) {
 		if (typeof data === 'string') {
 			var res = fromString(data);
@@ -137,19 +140,7 @@ var FileInfo = util.FileInfo = (function() {
 			}
 		} else {
 			if (isBlob(data)) {
-				var slice = data.slice(0, 4);
-				var reader = new FileReader();
-				reader.onload = function(event) {
-					var buffer = reader.result;
-					var res = fromBuffer(buffer) || byMime[data.type];
-					if (res) {
-						onsuccess(res);
-					} else {
-						onerror && onerror();
-						warn(data);
-					}
-				};
-				reader.readAsArrayBuffer(slice);
+				fromBlob(data, onsuccess, onerror);
 			} else {
 				onerror && onerror();
 				warn(data);
@@ -157,6 +148,7 @@ var FileInfo = util.FileInfo = (function() {
 		}
 	};
 	///
+	FileInfo.fromBlob = fromBlob;
 	FileInfo.fromBuffer = fromBuffer;
 	FileInfo.fromString = fromString;
 	FileInfo.fromExtension = fromExtension;
@@ -166,7 +158,7 @@ var FileInfo = util.FileInfo = (function() {
 	FileInfo.isSVGString = isSVGString;
 	///
 	return FileInfo;
-	
+
 	/* log */
 	function warn(data) {
 		console.warn('could not detect format', data);
@@ -185,9 +177,28 @@ var FileInfo = util.FileInfo = (function() {
 			   data.startsWith('<?xml') && data.includes('<svg') || 
 			   data.startsWith('<svg');
 	};
+	
+	/* detect via Blob */
+	function fromBlob(blob, onsuccess, onerror) {
+		var slice = blob.slice(0, 4);
+		var reader = new FileReader();
+		reader.onload = function(event) {
+			var buffer = reader.result;
+			var res = fromBuffer(buffer) || byMime[blob.type];
+			if (res) {
+				onsuccess(res);
+			} else {
+				onerror && onerror();
+				warn(blob);
+			}
+		};
+		reader.readAsArrayBuffer(slice);
+	};
 
 	/* detect via ArrayBuffer */
 	function fromBuffer(buffer) {
+		if (buffer.byteLength > 4)
+			buffer = buffer.slice(0, 4);
 		var signature = bufferToHex(buffer);
 		for (var sig in bySignature) {
 			if (sig === signature.slice(0, sig.length)) {
@@ -199,11 +210,11 @@ var FileInfo = util.FileInfo = (function() {
 
 	function bufferToHex(buffer) {
 		var array = new Uint8Array(buffer);
-		var res = '';
+		var hex = '';
 		for (var i = 0; i < array.length; i ++) {
-			res += array[i].toString(16);
+			hex += array[i].toString(16);
 		}
-		return res;
+		return hex;
 	};
 
 	/* detect via String */
@@ -223,11 +234,11 @@ var FileInfo = util.FileInfo = (function() {
 			}
 		}
 	};
-	
+
 	function fromExtension(ext) {
 		return byExtension[ext];
 	};
-	
+
 	function fromMime(mime) {
 		return byMime[mime];
 	};
