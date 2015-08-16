@@ -4,9 +4,15 @@ Quick and easy file info detection in Javascript:
 
 ```js
 /// Basic usage:
-var info = FileInfo(someVariable); // accepts: URL | Base64 | Blob | Buffer
+FileInfo(someVariable, function(info) { // accepts: URL | Base64 | Blob | Buffer
+  console.log(info);
+}, function(err) {
+  console.error(err);
+});
 
 /// Exposed internals:
+FileInfo.fromBlob(blob, onsuccess, onerror);
+///
 var info = FileInfo.fromBuffer(arrayBuffer);
 var info = FileInfo.fromString(string);
 var info = FileInfo.fromExtension(someExtension); // accepts file extension [ex. "gif" | "webm"]
