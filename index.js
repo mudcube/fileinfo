@@ -1,6 +1,6 @@
 /*
 	----------------------------------------------------------
-	FileInfo : 0.1.1 : 2015-08-06 : https://mudcu.be
+	FileInfo : 0.1.1 : 2015-08-21 : https://mudcu.be
 	----------------------------------------------------------
 	references
 	----------------------------------------------------------
@@ -11,6 +11,8 @@
 
 var FileInfo = (function() {
 
+	var DEBUG = false;
+	///
 	var byExtension = (function() {
 		var res = {
 			/* text */
@@ -121,6 +123,7 @@ var FileInfo = (function() {
 		'38425053': 'psd', // '8BPS'
 		'7b5c7274': 'rtf', // '{\rtf1'
 			// 7b 5c 72 74 66 31
+		'504b3414': 'zip', // zip.js
 		'504b0304': 'zip', // 'PK..' - archive
 		'504b0506': 'zip', // 'PK..' - empty archive
 		'504b0708': 'zip', // 'PK..' - spanned archive
@@ -130,22 +133,30 @@ var FileInfo = (function() {
 	};
 
 	function FileInfo(data, onsuccess, onerror) {
-		if (typeof data === 'string') {
-			var res = fromString(data);
-			if (res) {
-				onsuccess(res);
+		return wrap(function(onsuccess, onerror) {
+			if (typeof data === 'string') {
+				var res = fromString(data);
+				if (res) {
+					onsuccess(res);
+				} else {
+					onsuccess(byExtension.png); //- fix me
+					warn(data, 1);
+				}
 			} else {
-				onsuccess(byExtension.png);
-				warn(data);
+				if (isBlob(data)) {
+					fromBlob(data, onsuccess, handleError);
+				} else {
+					handleError();
+					warn(data, 2);
+				}
 			}
-		} else {
-			if (isBlob(data)) {
-				fromBlob(data, onsuccess, onerror);
-			} else {
-				onerror && onerror();
-				warn(data);
-			}
-		}
+		}, arguments);
+
+		function handleError() {
+			onerror && onerror({
+				message: 'blobFromBuffer: format could not be determined'
+			});
+		};
 	};
 	///
 	FileInfo.fromBlob = fromBlob;
@@ -154,22 +165,48 @@ var FileInfo = (function() {
 	FileInfo.fromExtension = fromExtension;
 	FileInfo.fromMime = fromMime;
 	///
+	FileInfo.is = function(args, onsuccess, onerror) {
+		args = args || {};
+		var data = args.data || '';
+		var search = args.search;
+		///
+		return wrap(function(onsuccess, onerror) {
+			FileInfo(data, function(fileInfo) {
+				for (var key in fileInfo) {
+					if (data === fileInfo[key]) {
+						onsuccess(true);
+						break;
+					}
+				}
+				onsuccess(false);
+			}, onerror);
+		}, arguments);
+	};
+	///
 	FileInfo.isBlob = isBlob;
 	FileInfo.isSVGString = isSVGString;
 	///
 	return FileInfo;
+	
+	function wrap(fn, args) {
+		if (typeof args[1] === 'function') {
+			fn(args[1], args[2], args[3]);
+		} else {
+			return new Promise(function(resolve, revoke) {
+				fn(resolve, revoke);
+			});
+		}
+	};
 
 	/* log */
-	function warn(data) {
-		console.warn('could not detect format', data);
+	function warn(data, idx) {
+		DEBUG && console.warn('could not detect format', data, idx);
 	};
 
 	/* detect */
 	function isBlob(data) {
 		var type = Object.prototype.toString.call(data);
-		var validType = type === '[object Blob]' || type === '[object File]';
-		var validSize = data.size > 3; // to ensure slice(0, 4) can work
-		return validType && validSize;
+		return type === '[object Blob]' || type === '[object File]';
 	};
 
 	function isSVGString(data) { // via vector.SVG.detect
@@ -180,7 +217,7 @@ var FileInfo = (function() {
 	
 	/* detect via Blob */
 	function fromBlob(blob, onsuccess, onerror) {
-		var slice = blob.slice(0, 4);
+		var slice = blob.slice(0, Math.min(4, blob.size));
 		var reader = new FileReader();
 		reader.onload = function(event) {
 			var buffer = reader.result;
@@ -189,7 +226,7 @@ var FileInfo = (function() {
 				onsuccess(res);
 			} else {
 				onerror && onerror();
-				warn(blob);
+				warn(blob, 3);
 			}
 		};
 		reader.readAsArrayBuffer(slice);
@@ -198,7 +235,7 @@ var FileInfo = (function() {
 	/* detect via ArrayBuffer */
 	function fromBuffer(buffer) {
 		if (buffer.byteLength > 4)
-			buffer = buffer.slice(0, 4);
+			buffer = buffer.slice(0, 5);
 		var signature = bufferToHex(buffer);
 		for (var sig in bySignature) {
 			if (sig === signature.slice(0, sig.length)) {
