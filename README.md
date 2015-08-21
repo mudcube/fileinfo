@@ -4,17 +4,14 @@ Quick and easy file info detection in Javascript:
 
 ```js
 /// Get information a file; mime, type, extension:
-FileInfo(yourInputVar, function(fileInfo) { // accepts: URL | Base64 | Blob | Buffer
+FileInfo(yourInputVar).then(function(fileInfo) { // accepts: URL | Base64 | Blob | Buffer
 
 }, function(err) {
 
 });
 
 /// Detect whether an input is of a specific type:
-FileInfo.is({
-  input: yourInputVar,
-  type: yourTargetType
-}, function(truthy) {
+FileInfo.is(yourInputVar, yourTargetType).then(function(truthy) {
   
 }, function(err) {
 
