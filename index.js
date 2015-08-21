@@ -132,22 +132,22 @@ var FileInfo = (function() {
 		'7b'      : 'json' // '{'
 	};
 
-	function FileInfo(data, onsuccess, onerror) {
+	function FileInfo(input, onsuccess, onerror) {
 		return wrap(function(onsuccess, onerror) {
-			if (typeof data === 'string') {
-				var res = fromString(data);
+			if (typeof input === 'string') {
+				var res = fromString(input);
 				if (res) {
 					onsuccess(res);
 				} else {
 					onsuccess(byExtension.png); //- fix me
-					warn(data, 1);
+					warn(input, 1);
 				}
 			} else {
-				if (isBlob(data)) {
-					fromBlob(data, onsuccess, handleError);
+				if (isBlob(input)) {
+					fromBlob(input, onsuccess, handleError);
 				} else {
 					handleError();
-					warn(data, 2);
+					warn(input, 2);
 				}
 			}
 		}, arguments);
@@ -165,15 +165,11 @@ var FileInfo = (function() {
 	FileInfo.fromExtension = fromExtension;
 	FileInfo.fromMime = fromMime;
 	///
-	FileInfo.is = function(args, onsuccess, onerror) {
-		args = args || {};
-		var data = args.data || '';
-		var search = args.search;
-		///
+	FileInfo.is = function(input, targetType, onsuccess, onerror) {
 		return wrap(function(onsuccess, onerror) {
-			FileInfo(data, function(fileInfo) {
+			FileInfo(input, function(fileInfo) {
 				for (var key in fileInfo) {
-					if (data === fileInfo[key]) {
+					if (targetType === fileInfo[key]) {
 						onsuccess(true);
 						break;
 					}
@@ -199,20 +195,20 @@ var FileInfo = (function() {
 	};
 
 	/* log */
-	function warn(data, idx) {
-		DEBUG && console.warn('could not detect format', data, idx);
+	function warn(input, idx) {
+		DEBUG && console.warn('could not detect format', input, idx);
 	};
 
 	/* detect */
-	function isBlob(data) {
-		var type = Object.prototype.toString.call(data);
+	function isBlob(input) {
+		var type = Object.prototype.toString.call(input);
 		return type === '[object Blob]' || type === '[object File]';
 	};
 
-	function isSVGString(data) { // via vector.SVG.detect
-		return data.startsWith('data:image/svg') || 
-			   data.startsWith('<?xml') && data.includes('<svg') || 
-			   data.startsWith('<svg');
+	function isSVGString(input) { // via vector.SVG.detect
+		return input.startsWith('data:image/svg') || 
+			   input.startsWith('<?xml') && input.includes('<svg') || 
+			   input.startsWith('<svg');
 	};
 	
 	/* detect via Blob */
