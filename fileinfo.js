@@ -1,19 +1,19 @@
 /*
-	-------------------------------------------------------
-	fileinfo : 0.1.1 : 2015-07-06 : https://mudcu.be
-	-------------------------------------------------------
-	https://github.com/mudcube/fileinfo
-	https://npmjs.com/package/fileinfo
-	-------------------------------------------------------
+	----------------------------------------------------------
+	FileInfo : 0.1.2 : 2016-02-02 : https://mudcu.be
+	----------------------------------------------------------
 	references
-	-------------------------------------------------------
-		* http://en.wikipedia.org/wiki/List_of_file_bySignature
-		* http://www.filebySignature.net/
-	-------------------------------------------------------
+	----------------------------------------------------------
+		http://en.wikipedia.org/wiki/List_of_file_bySignature
+		http://www.filebySignature.net/
+	----------------------------------------------------------
 */
 
-var FileInfo = (function() {
-	var byExtension = (function() {
+var FileInfo = (function () {
+
+	var DEBUG = false;
+
+	var byExtension = (function () {
 		var res = {
 			/* text */
 			json: {mime: 'application/json', type: 'text'},
@@ -64,8 +64,8 @@ var FileInfo = (function() {
 		}
 		return res;
 	})();
-	
-	var byMime = (function() {
+
+	var byMime = (function () {
 		var res = {};
 		for (var ext in byExtension) {
 			var item = byExtension[ext];
@@ -76,13 +76,13 @@ var FileInfo = (function() {
 
 	var bySignature = {
 		/* image */
-		'424d':     'bmp',
-		'47494638': 'gif', 
+		'424d'    : 'bmp',
+		'47494638': 'gif',
 			// 47 49 46 38 37 61 (GIF87a)
 			// 47 49 46 38 39 61 (GIF89a)
 		'69636e73': 'icns', // http://en.wikipedia.org/wiki/Apple_Icon_Image_format
 		'00000100': 'ico',
-		'ffd8ff':   'jpg',
+		'ffd8ff'  : 'jpg',
 		'89504e47': 'png',
 			// 89 50 4E 47 0D 0A 1A 0A
 		'4d4d002a': 'tiff', // big endian format
@@ -92,12 +92,12 @@ var FileInfo = (function() {
 		/* audio */
 		'464f524d': 'aiff',
 			// 46 4F 52 4D nn nn nn nn 41 49 46 46
-		'4d546864': 'mid',
-		'fffb':     'mp3',
-		'494433':   'mp3',
+		'4d546864': 'mid', // 'MThd'
+		'fffb'    : 'mp3',
+		'494433'  : 'mp3',
 		'4f676753': 'ogg',
 		'52494646': 'wav',
-			// 52 49 46 46 nn nn nn nn 57 41 56 45	
+			// 52 49 46 46 nn nn nn nn 57 41 56 45
 
 		/* video */
 		'000001b3': 'mpeg', // elementary stream (ES) // http://en.wikipedia.org/wiki/Elementary_stream
@@ -105,7 +105,7 @@ var FileInfo = (function() {
 		'1a45dfa3': 'webm',
 
 		/* font */
-		'4c50':     'eot',
+		'4c50'    : 'eot',
 		'00010000': 'ttf', // windows
 			// 00 01 00 00 00
 		'74727565': 'ttf', // mac
@@ -118,92 +118,128 @@ var FileInfo = (function() {
 			// 77 4F 46 32 00 01 00 00
 
 		/* package */
-		'25504446': 'pdf',
-		'25215053': 'ps',
-		'38425053': 'psd',
-		'7b5c7274': 'rtf',
-			// 7b 5c 72 74 66
-		'504b0304': 'zip', // archive
-		'504b0506': 'zip', // empty archive
-		'504b0708': 'zip'  // spanned archive
+		'25504446': 'pdf', // '%PDF'
+		'25215053': 'ps',  // '%!PS-Ado'
+		'38425053': 'psd', // '8BPS'
+		'7b5c7274': 'rtf', // '{\rtf1'
+			// 7b 5c 72 74 66 31
+		'504b0304': 'zip', // 'PK..' - archive
+		'504b0506': 'zip', // 'PK..' - empty archive
+		'504b0708': 'zip', // 'PK..' - spanned archive
+
+		/* loose detection - keep at end of object */
+		'7b'      : 'json' // '{'
 	};
-	
-	function FileInfo(data, onsuccess, onerror) {
-		if (typeof onsuccess !== 'function') {
-			throw 'onsuccess must be a function';
-		}
-		///
-		if (typeof data === 'string') {
-			var res = detectFromString(data);
-			if (res) {
-				onsuccess(res);
+
+	function FileInfo(input, onsuccess, onerror) {
+		return wrap(function (onsuccess, onerror) {
+			if (typeof input === 'string') {
+				var res = fromString(input);
+				if (res) {
+					onsuccess(res);
+				} else {
+					onsuccess(byExtension.png); //- fix me
+					warn(input, 1);
+				}
 			} else {
-				onsuccess(byExtension.png);
-				warn(data);
+				if (isBlob(input)) {
+					fromBlob(input, onsuccess, handleError);
+				} else {
+					handleError();
+					warn(input, 2);
+				}
 			}
+		}, arguments);
+
+		function handleError() {
+			onerror && onerror({
+				message: 'blobFromBuffer: format could not be determined'
+			});
+		};
+	}
+
+	FileInfo.fromBlob = fromBlob;
+	FileInfo.fromBuffer = fromBuffer;
+	FileInfo.fromString = fromString;
+	FileInfo.fromExtension = fromExtension;
+	FileInfo.fromMime = fromMime;
+
+	FileInfo.is = function (input, targetType, onsuccess, onerror) {
+		return wrap(function (onsuccess, onerror) {
+			FileInfo(input, function (fileInfo) {
+				for (var key in fileInfo) {
+					if (targetType === fileInfo[key]) {
+						onsuccess(true);
+						break;
+					}
+				}
+				onsuccess(false);
+			}, onerror);
+		}, arguments);
+	};
+
+	FileInfo.isBlob = isBlob;
+	FileInfo.isFile = isFile;
+	FileInfo.isSVGString = isSVGString;
+
+	return FileInfo;
+
+	function wrap(fn, args) {
+		if (typeof args[1] === 'function') {
+			fn(args[1], args[2], args[3]);
 		} else {
-			if (isBlob(data)) {
-				if (data.size >= 4) {
-					var blob = data.slice(0, 4);
-					var reader = new FileReader();
-					reader.onload = function(event) {
-						handleArrayBuffer(reader.result);
-					};
-					reader.readAsArrayBuffer(blob);
-					return;
-				}
-			} else if (isBuffer(data)) {
-				if (data.length >= 4) {
-					handleArrayBuffer(data.slice(0, 4));
-					return;
-				}
-			}
-			///
-			onerror && onerror();
-			warn(data);
+			return new Promise(function (resolve, revoke) {
+				fn(resolve, revoke);
+			});
 		}
-		///
-		function handleArrayBuffer(buf) {
-			var res = detectFromBuffer(buf) || byMime[data.type];
+	}
+
+	/* log */
+	function warn(input, idx) {
+		DEBUG && console.warn('could not detect format', input, idx);
+	}
+
+	/* detect */
+	function isBlob(input) {
+		var type = Object.prototype.toString.call(input);
+		return type === '[object Blob]' || type === '[object File]';
+	}
+
+	function isFile(input) {
+		var type = Object.prototype.toString.call(input);
+		return type === '[object File]';
+	}
+
+	function isSVGString(input) { // via vector.SVG.detect
+		return input.startsWith('data:image/svg') ||
+			   input.startsWith('<?xml') && input.includes('<svg') ||
+			   input.startsWith('<svg');
+	}
+
+	/* detect via Blob */
+	function fromBlob(blob, onsuccess, onerror) {
+		var length = Math.min(5, blob.size);
+		var slice = blob.slice(0, length);
+		var reader = new FileReader();
+		reader.onload = function (event) {
+			var buffer = reader.result;
+			var res = fromBuffer(buffer) || byMime[blob.type];
 			if (res) {
 				onsuccess(res);
 			} else {
 				onerror && onerror();
-				warn(data);
+				warn(blob, 3);
 			}
 		};
-	};
-	
-	FileInfo.byExtension = byExtension;
-	FileInfo.byMime = byMime;
-	FileInfo.isBlob = isBlob;
-	FileInfo.isSVGString = isSVGString;
-	
-	return FileInfo;
-	
-	/* log */
-	function warn(data) {
-		console.warn('could not detect format', data);
-	};
-
-	/* detect */
-	function isBlob(data) {
-		var type = Object.prototype.toString.call(data);
-		return type === '[object Blob]' || type === '[object File]';
-	};
-
-	function isBuffer(data) {
-		return typeof Buffer !== 'undefined' && data instanceof Buffer;
-	};
-
-	function isSVGString(data) { // via vector.SVG.detect
-		return data.startsWith('data:image/svg') || 
-			   data.startsWith('<?xml') || 
-			   data.startsWith('<svg');
-	};
+		reader.readAsArrayBuffer(slice);
+	}
 
 	/* detect via ArrayBuffer */
-	function detectFromBuffer(buffer) {
+	function fromBuffer(buffer) {
+		if (buffer.byteLength > 4) {
+			buffer = buffer.slice(0, 5);
+		}
+
 		var signature = bufferToHex(buffer);
 		for (var sig in bySignature) {
 			if (sig === signature.slice(0, sig.length)) {
@@ -211,30 +247,45 @@ var FileInfo = (function() {
 				return byExtension[ext];
 			}
 		}
-	};
+	}
 
 	function bufferToHex(buffer) {
 		var array = new Uint8Array(buffer);
-		var res = '';
+		var hex = '';
 		for (var i = 0; i < array.length; i ++) {
-			res += array[i].toString(16);
-		}
-		return res;
-	};
-
-	/* detect via String */
-	function detectFromString(string) {
-		var ext = string.toLowerCase().split('.').pop();
-		if (byExtension[ext]) {
-			return byExtension[ext];
-		} else {
-			if (isSVGString(string)) {
-				return byExtension.svg;
+			var code = array[i].toString(16);
+			if (code.length === 1) {
+				hex += '0' + code;
+			} else {
+				hex += code;
 			}
 		}
-	};
-})();
+		return hex;
+	}
 
-if (typeof module !== 'undefined' && module.exports) {
-	module.exports = FileInfo;
-}
+	/* detect via String */
+	function fromString(string) {
+		var lower = string.toLowerCase();
+		if (string.startsWith('data:')) {
+			var mime = lower.substr(5).split(';').shift();
+			return byMime[mime];
+		} else {
+			var ext = lower.split('.').pop();
+			if (byExtension[ext]) {
+				return byExtension[ext];
+			} else {
+				if (isSVGString(string)) {
+					return byExtension.svg;
+				}
+			}
+		}
+	}
+
+	function fromExtension(ext) {
+		return byExtension[ext];
+	}
+
+	function fromMime(mime) {
+		return byMime[mime];
+	}
+})();
