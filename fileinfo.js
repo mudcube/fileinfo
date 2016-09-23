@@ -2,7 +2,11 @@
 	-------------------------------------------------------
 	fileinfo : 0.1.1 : 2015-07-06 : https://mudcu.be
 	-------------------------------------------------------
+	https://github.com/mudcube/fileinfo
+	https://npmjs.com/package/fileinfo
+	-------------------------------------------------------
 	references
+	-------------------------------------------------------
 		* http://en.wikipedia.org/wiki/List_of_file_bySignature
 		* http://www.filebySignature.net/
 	-------------------------------------------------------

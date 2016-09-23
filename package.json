@@ -1,16 +1,12 @@
 {
   "name": "fileinfo",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Detect file format from String | Blob | Buffer",
-  "main": "index.js",
-  "author": "Michael Deal <hello@sketch.io> (https://mudcu.be)",
+  "main": "fileinfo.js",
+  "author": "Michael Deal <hello@galactic.ink> (https://galactic.ink)",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mudcube/fileinfo.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mudcube/fileinfo/issues"
-  },
-  "homepage": "https://github.com/mudcube/fileinfo#readme"
+  }
 }
