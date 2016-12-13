@@ -3,19 +3,18 @@
 Quick and easy file info detection in Javascript. Accepts binary/base64/strings. 
 
 ```js
-/// Get information a file; mime, type, extension:
-FileInfo(yourInputVar).then(function(fileInfo) { // accepts: URL | Base64 | Blob | Buffer
-	// example: {mp3: {mime: 'audio/mpeg', type: 'audio'}}
-}, function(err) {
-	
-});
+const FileInfo = require('fileinfo')
+/* Get information a file; mime, type, extension */
+FileInfo(input).then(info => { // input can be: URL | Base64 | Blob | Buffer
+	// example result: {mp3: {mime: 'audio/mpeg', type: 'audio'}}
+}).catch(err => {
 
-/// Detect whether an input is of a specific type:
-FileInfo.is(yourInputVar, yourTargetType).then(function(truthy) {
+})
+
+/* Detect whether an input is of a specific type */
+FileInfo.is(input, targetType).then(truthy => {
   
-}, function(err) {
-
-};
+})
 ```
 
 #### Detects the following file formats
@@ -71,4 +70,4 @@ FileInfo.is(yourInputVar, yourTargetType).then(function(truthy) {
 
 The MIT License
 
-Copyright (c) 2015 Michael Deal <https://mudcu.be>. All rights reserved.
+Copyright (c) 2015 Michael Deal <https://galactic.ink>. All rights reserved.
