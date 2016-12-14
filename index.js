@@ -1,5 +1,5 @@
 /*
-	fileinfo : https://galactic.ink
+	fileinfo : https://github.com/mudcube/fileinfo
 */
 
 const DEBUG = false
