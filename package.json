@@ -1,8 +1,8 @@
 {
   "name": "fileinfo",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Detect file format from String | Blob | Buffer",
-  "main": "fileinfo.js",
+  "main": "index.js",
   "author": "Michael Deal <hello@galactic.ink> (https://galactic.ink)",
   "license": "MIT",
   "repository": {
