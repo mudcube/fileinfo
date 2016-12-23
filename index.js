@@ -2,32 +2,21 @@
 	fileinfo : https://github.com/mudcube/fileinfo
 */
 
-const DEBUG = false
-
 function fileinfo(input) {
-	return wrap((resolve, reject) => {
-		if (typeof input === 'string') {
-			const res = fromString(input)
-			if (res) {
-				resolve(res)
-			} else {
-				resolve(byExtension.png); //- fix me
-				warn(input, 1)
-			}
-		} else {
-			if (isBlob(input)) {
-				fromBlob(input, resolve, handleError)
-			} else {
-				handleError()
-				warn(input, 2)
-			}
+	if (isBlob(input)) {
+		return fromBlob(input)
+	}
+
+	if (typeof input === 'string') {
+		let info = fromString(input)
+		if (info) {
+			return Promise.resolve(info)
 		}
-		function handleError() {
-			reject && reject({
-				message: 'blobFromBuffer: format could not be determined'
-			})
-		}
-	}, arguments)
+	}
+
+	return Promise.reject({
+		message: 'blobFromBuffer: format could not be determined'
+	})
 }
 
 fileinfo.fromBlob = fromBlob
@@ -36,18 +25,25 @@ fileinfo.fromString = fromString
 fileinfo.fromExtension = fromExtension
 fileinfo.fromMime = fromMime
 
-fileinfo.is = function (input, targetType, onsuccess, onerror) {
-	return wrap((onsuccess, onerror) => {
-		fileinfo(input, fileInfo => {
-			for (let key in fileInfo) {
-				if (targetType === fileInfo[key]) {
-					onsuccess(true)
-					break
-				}
+fileinfo.register = function (info) {
+	if (Array.isArray(info)) {
+		info.forEach(fileinfo.register)
+	} else {
+		if (info.extension) byExtension[info.extension] = info
+		if (info.signature) bySignature[info.signature] = info
+		if (info.mime) byMime[info.mime] = info
+	}
+}
+
+fileinfo.is = function (input, targetType) {
+	return fileinfo(input).then(info => {
+		for (let key in info) {
+			if (targetType === info[key]) {
+				return true
 			}
-			onsuccess(false)
-		}, onerror)
-	}, arguments)
+		}
+		return false
+	})
 }
 
 fileinfo.isBlob = isBlob
@@ -255,19 +251,6 @@ const byMime = (function () {
 	return res
 })()
 
-function wrap(fn, options) {
-	if (typeof options[1] === 'function') {
-		fn(options[1], options[2], options[3])
-	} else {
-		return new Promise(fn)
-	}
-}
-
-/* log */
-function warn(input, idx) {
-	DEBUG && console.warn('could not detect format', input, idx)
-}
-
 /* detect */
 function isBlob(input) {
 	const type = Object.prototype.toString.call(input)
@@ -286,21 +269,27 @@ function isSVGString(input) { // via vector.SVG.detect
 }
 
 /* detect via Blob */
-function fromBlob(blob, onsuccess, onerror) {
-	const length = Math.min(5, blob.size)
-	const slice = blob.slice(0, length)
-	const reader = new FileReader()
-	reader.onload = function (event) {
-		const buffer = reader.result
-		const res = fromBuffer(buffer) || byMime[blob.type]
-		if (res) {
-			onsuccess(res)
-		} else {
-			onerror && onerror()
-			warn(blob, 3)
+function fromBlob(blob) {
+	return new Promise((resolve, reject) => {
+		const length = Math.min(5, blob.size)
+		const slice = blob.slice(0, length)
+		const reader = new FileReader()
+		reader.onload = function () {
+			let buffer = reader.result
+			let info = fromBuffer(buffer) || byMime[blob.type]
+			if (info) { // matches file signature or mimeType
+				resolve(info)
+				return
+			}
+			let name = blob.name // File.name - https://developer.mozilla.org/en-US/docs/Web/API/File
+			if (name && (info = fromString(name))) {
+				resolve(info)
+				return
+			}
+			reject(`fromBlob: could not determine format`)
 		}
-	}
-	reader.readAsArrayBuffer(slice)
+		reader.readAsArrayBuffer(slice)
+	})
 }
 
 /* detect via ArrayBuffer */
@@ -308,7 +297,6 @@ function fromBuffer(buffer) {
 	if (buffer.byteLength > 4) {
 		buffer = buffer.slice(0, 5)
 	}
-
 	const signature = bufferToHex(buffer)
 	for (let sig in bySignature) {
 		if (sig === signature.slice(0, sig.length)) {
@@ -324,7 +312,7 @@ function bufferToHex(buffer) {
 	for (let i = 0; i < array.length; i++) {
 		const code = array[i].toString(16)
 		if (code.length === 1) {
-			hex += '0' + code
+			hex += `0${code}`
 		} else {
 			hex += code
 		}
@@ -343,10 +331,10 @@ function fromString(string) {
 	const ext = lower.split('.').pop()
 	if (byExtension[ext]) {
 		return byExtension[ext]
-	} else {
-		if (isSVGString(string)) {
-			return byExtension.svg
-		}
+	}
+
+	if (isSVGString(string)) {
+		return byExtension.svg
 	}
 }
 
